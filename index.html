@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blueprint AI Generator for Unreal Engine 5</title>
+    <title>Blueprint AI Studio - Unreal Engine 5</title>
     <style>
         * {
             margin: 0;
@@ -11,283 +11,480 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --primary: #00d4ff;
+            --primary-dark: #0099cc;
+            --bg-dark: #0a0a0f;
+            --bg-medium: #1a1a2e;
+            --bg-light: #2a2a3e;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --success: #00ff88;
+            --error: #ff4466;
+            --warning: #ffaa00;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
-            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-medium) 100%);
+            color: var(--text-primary);
             min-height: 100vh;
-            padding: 20px;
+            overflow: hidden;
         }
 
-        .container {
-            max-width: 1800px;
-            margin: 0 auto;
-        }
-
-        header {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
+        .app-container {
             display: flex;
+            height: 100vh;
+        }
+
+        /* Header Bar */
+        .header-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
+            padding: 0 24px;
+            z-index: 1000;
         }
 
-        h1 {
-            color: #00d4ff;
-            font-size: 2em;
-            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
-        }
-
-        .version-info {
-            color: #a0a0a0;
-            font-size: 0.9em;
-        }
-
-        .api-status {
+        .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
         }
 
-        .status-indicator {
-            width: 10px;
-            height: 10px;
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .api-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            background: #ff4444;
+            background: var(--error);
         }
 
-        .status-indicator.connected {
-            background: #44ff44;
+        .status-dot.active {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.6; }
         }
 
-        .main-layout {
-            display: grid;
-            grid-template-columns: 400px 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
+        /* Main Layout */
+        .main-content {
+            display: flex;
+            width: 100%;
+            margin-top: 60px;
+            height: calc(100vh - 60px);
         }
 
-        .chat-panel {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
+        /* Sidebar Chat */
+        .sidebar {
+            width: 400px;
+            background: rgba(26, 26, 46, 0.6);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             flex-direction: column;
-            height: 800px;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 60px;
         }
 
         .api-setup {
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid #00d4ff;
-            border-radius: 5px;
-            padding: 10px;
-            margin-bottom: 15px;
+            padding: 16px;
+            background: rgba(0, 212, 255, 0.05);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .api-setup.hidden {
+            display: none;
         }
 
         .api-input-group {
             display: flex;
-            gap: 5px;
-            margin-top: 10px;
+            gap: 8px;
+            margin-top: 12px;
         }
 
-        .api-input {
+        .input-field {
             flex: 1;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid #00d4ff;
-            color: #e0e0e0;
-            padding: 8px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: var(--text-primary);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-icon {
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Chat Area */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         .chat-messages {
             flex: 1;
             overflow-y: auto;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 20px;
             scroll-behavior: smooth;
         }
 
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.3);
+            border-radius: 3px;
+        }
+
         .message {
-            margin-bottom: 15px;
-            animation: slideIn 0.3s ease;
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease;
         }
 
-        .message.user {
-            text-align: right;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .message.assistant {
-            text-align: left;
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .message-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
         }
 
         .message-content {
-            display: inline-block;
-            max-width: 90%;
-            padding: 10px 15px;
-            border-radius: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            white-space: pre-wrap;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            line-height: 1.6;
         }
 
         .message.user .message-content {
-            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
-            color: white;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-color: rgba(102, 126, 234, 0.3);
+            margin-left: 32px;
         }
 
         .message.assistant .message-content {
-            background: rgba(100, 100, 120, 0.3);
-            border: 1px solid #666;
-        }
-
-        .message-label {
-            font-size: 0.8em;
-            color: #888;
-            margin-bottom: 5px;
+            margin-left: 32px;
         }
 
         .chat-input-container {
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-input-wrapper {
             display: flex;
-            gap: 10px;
+            gap: 12px;
+            align-items: flex-end;
         }
 
         .chat-input {
             flex: 1;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid #00d4ff;
-            color: #e0e0e0;
-            padding: 10px;
-            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 12px;
             resize: none;
-            min-height: 50px;
-            max-height: 150px;
-        }
-
-        .chat-examples {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .example-btn {
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid #00d4ff;
-            color: #00d4ff;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.85em;
-            margin: 3px;
+            min-height: 48px;
+            max-height: 120px;
+            font-size: 14px;
             transition: all 0.3s ease;
         }
 
-        .example-btn:hover {
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            padding: 6px 12px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: var(--primary);
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .quick-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Blueprint Viewer Area */
+        .viewer-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-dark);
+        }
+
+        /* Tabs */
+        .tabs-container {
+            display: flex;
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0 12px;
+            gap: 4px;
+            align-items: center;
+            min-height: 48px;
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            max-width: 200px;
+        }
+
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .tab.active {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: none;
+        }
+
+        .tab-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tab-close {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-close:hover {
+            background: rgba(255, 68, 102, 0.2);
+            color: var(--error);
+        }
+
+        .new-tab-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--primary);
+        }
+
+        .new-tab-btn:hover {
             background: rgba(0, 212, 255, 0.2);
         }
 
-        button {
-            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
+        /* Canvas Area */
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
         }
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .secondary-btn {
-            background: linear-gradient(135deg, #6a6a8e 0%, #4a4a6e 100%);
-        }
-
-        .danger-btn {
-            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
-        }
-
-        .success-btn {
-            background: linear-gradient(135deg, #44ff44 0%, #00cc00 100%);
-        }
-
-        .visualization-panel {
+        .canvas-controls {
+            position: absolute;
+            top: 16px;
+            right: 16px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 8px;
+            z-index: 100;
         }
 
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .control-panel {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            padding: 20px;
+        .control-group {
+            display: flex;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            padding: 4px;
             backdrop-filter: blur(10px);
         }
 
-        h2 {
-            color: #00d4ff;
-            margin-bottom: 15px;
-            font-size: 1.3em;
+        .control-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        textarea {
-            width: 100%;
-            height: 120px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid #00d4ff;
-            color: #e0e0e0;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: 'Courier New', monospace;
-            resize: vertical;
+        .control-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--primary);
         }
 
-        #canvas-container {
-            background: #2a2a3e;
-            border-radius: 10px;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-            min-height: 600px;
-            border: 2px solid #00d4ff;
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        .control-btn.active {
+            background: rgba(0, 212, 255, 0.3);
+            color: var(--primary);
         }
 
         canvas {
             display: block;
-            background: #1a1a2e;
-            border-radius: 5px;
+            width: 100%;
+            height: 100%;
             cursor: grab;
         }
 
@@ -295,316 +492,390 @@
             cursor: grabbing;
         }
 
+        /* Info Panel */
         .info-panel {
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 5px;
-            padding: 10px;
-            margin-top: 10px;
-            font-size: 0.9em;
-        }
-
-        .node-count {
-            color: #44ff44;
-        }
-
-        .connection-count {
-            color: #ffaa44;
-        }
-
-        .zoom-controls {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            z-index: 100;
-        }
-
-        .zoom-controls button {
-            width: 40px;
-            height: 40px;
-            padding: 0;
-            font-size: 20px;
-        }
-
-        .view-controls {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            display: flex;
-            gap: 5px;
-            z-index: 100;
-        }
-
-        .view-controls button {
-            padding: 5px 10px;
+            bottom: 16px;
+            left: 16px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 8px;
             font-size: 12px;
-        }
-
-        #statusMessage {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: bold;
-            z-index: 1000;
-            display: none;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        .success {
-            background: #44ff44;
-            color: #003300;
-        }
-
-        .error {
-            background: #ff4444;
-            color: #330000;
-        }
-
-        .warning {
-            background: #ffaa44;
-            color: #332200;
-        }
-
-        .legend {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 11px;
+            display: flex;
+            gap: 24px;
             z-index: 100;
         }
 
-        .legend-item {
-            display: inline-block;
-            margin-right: 15px;
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .legend-color {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 5px;
-            vertical-align: middle;
+        .info-label {
+            color: var(--text-secondary);
         }
 
-        .loading-indicator {
+        .info-value {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Loading State */
+        .loading-spinner {
             display: none;
-            text-align: center;
-            padding: 10px;
-            color: #00d4ff;
-        }
-
-        .loading-indicator.active {
-            display: block;
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0, 212, 255, 0.3);
-            border-top-color: #00d4ff;
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(0, 212, 255, 0.2);
+            border-top-color: var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        .loading-spinner.active {
+            display: block;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        @media (max-width: 1200px) {
-            .main-layout {
-                grid-template-columns: 1fr;
-            }
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 2000;
+            animation: slideUp 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
 
-            .chat-panel {
-                height: 400px;
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .toast.success {
+            border-color: var(--success);
+        }
+
+        .toast.error {
+            border-color: var(--error);
+        }
+
+        .toast-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .toast.success .toast-icon {
+            background: var(--success);
+            color: var(--bg-dark);
+        }
+
+        .toast.error .toast-icon {
+            background: var(--error);
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 350px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 50vh;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .viewer-container {
+                height: 50vh;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div>
-                <h1>🤖 Blueprint AI Generator</h1>
-                <div class="version-info">Unreal Engine 5.5/5.6 | Powered by Claude AI</div>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header-bar">
+            <div class="logo">
+                <div class="logo-icon">🎮</div>
+                <span>Blueprint AI Studio</span>
             </div>
-            <div class="api-status">
-                <span>API Status:</span>
-                <div class="status-indicator" id="apiStatus"></div>
-                <span id="apiStatusText">Non connecté</span>
+            <div class="header-actions">
+                <div class="api-indicator">
+                    <div class="status-dot" id="apiStatus"></div>
+                    <span id="apiStatusText">Déconnecté</span>
+                </div>
+                <button class="btn btn-secondary btn-icon" onclick="exportCurrentBlueprint()" title="Exporter">
+                    📥
+                </button>
+                <button class="btn btn-secondary btn-icon" onclick="showHelp()" title="Aide">
+                    ❓
+                </button>
             </div>
-        </header>
+        </div>
 
-        <div class="main-layout">
-            <div class="chat-panel">
-                <div class="api-setup">
-                    <div style="font-size: 0.9em; color: #00d4ff; margin-bottom: 5px;">
-                        🔑 Configuration API Claude
-                    </div>
-                    <div style="font-size: 0.8em; color: #888; margin-bottom: 5px;">
-                        Obtenez votre clé API sur <a href="https://console.anthropic.com/" target="_blank" style="color: #00d4ff;">console.anthropic.com</a>
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar Chat -->
+            <div class="sidebar" id="sidebar">
+                <div class="api-setup" id="apiSetup">
+                    <div style="font-size: 13px; color: var(--primary); margin-bottom: 8px;">
+                        🔑 Configuration API
                     </div>
                     <div class="api-input-group">
-                        <input type="password" class="api-input" id="apiKey" placeholder="sk-ant-api03-...">
-                        <button onclick="saveApiKey()">💾</button>
-                        <button onclick="testApiConnection()">🔌 Test</button>
+                        <input type="password" class="input-field" id="apiKey" placeholder="Clé API Claude...">
+                        <button class="btn btn-icon" onclick="saveApiKey()" title="Sauvegarder">💾</button>
+                        <button class="btn btn-secondary btn-icon" onclick="testApiConnection()" title="Tester">🔌</button>
                     </div>
                 </div>
 
-                <div class="chat-messages" id="chatMessages">
-                    <div class="message assistant">
-                        <div class="message-label">Assistant</div>
-                        <div class="message-content">👋 Bienvenue dans le générateur de Blueprints pour Unreal Engine !
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message assistant">
+                            <div class="message-header">
+                                <div class="message-avatar">🤖</div>
+                                <span>Assistant Blueprint</span>
+                            </div>
+                            <div class="message-content">
+                                Bienvenue dans Blueprint AI Studio ! 
+                                
+Je peux créer pour vous des Blueprints pour Unreal Engine 5.5/5.6.
 
-Je peux créer des Blueprints pour :
-• Mouvements et animations
-• Systèmes d'interaction
-• Mécaniques de gameplay
-• Portes, plateformes, téléporteurs
-• Et bien plus !
+Configurez d'abord votre clé API Claude, puis demandez-moi n'importe quel Blueprint. Les Blueprints générés s'ouvriront automatiquement dans de nouveaux onglets.
 
-📝 <b>Comment utiliser :</b>
-1. Entrez votre clé API Claude
-2. Testez la connexion
-3. Demandez-moi n'importe quel Blueprint !
-
-💡 <b>Exemple :</b> "Crée un Blueprint pour une porte qui s'ouvre automatiquement"</div>
+💡 Exemples : "Crée une porte automatique", "Système de plateforme mobile", "Téléporteur avec particules"
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="loading-indicator" id="loadingIndicator">
-                    <div class="spinner"></div>
-                    <div>Claude réfléchit...</div>
-                </div>
+                    <div class="loading-spinner" id="loadingSpinner"></div>
 
-                <div class="chat-input-container">
-                    <textarea class="chat-input" id="chatInput" 
-                        placeholder="Demandez-moi un Blueprint... (ex: 'Crée un Blueprint pour une porte qui s'ouvre')"
-                        onkeydown="handleChatKeypress(event)"></textarea>
-                    <button onclick="sendMessage()" id="sendBtn">📤</button>
-                </div>
-
-                <div class="chat-examples">
-                    <div style="font-size: 0.85em; color: #888; margin-bottom: 5px;">Exemples rapides :</div>
-                    <button class="example-btn" onclick="setExample('Crée un Blueprint pour une plateforme mobile')">🎮 Plateforme</button>
-                    <button class="example-btn" onclick="setExample('Blueprint pour un pickup qui tourne')">✨ Pickup</button>
-                    <button class="example-btn" onclick="setExample('Système de porte avec trigger')">🚪 Porte</button>
-                    <button class="example-btn" onclick="setExample('Blueprint de téléporteur')">🌀 Téléporteur</button>
+                    <div class="chat-input-container">
+                        <div class="chat-input-wrapper">
+                            <textarea class="chat-input" id="chatInput" 
+                                placeholder="Décrivez le Blueprint que vous souhaitez créer..."
+                                onkeydown="handleChatKeypress(event)"></textarea>
+                            <button class="btn" onclick="sendMessage()" id="sendBtn">
+                                Envoyer
+                            </button>
+                        </div>
+                        <div class="quick-actions">
+                            <div class="quick-btn" onclick="quickPrompt('porte automatique avec trigger')">🚪 Porte</div>
+                            <div class="quick-btn" onclick="quickPrompt('plateforme mobile entre deux points')">📦 Plateforme</div>
+                            <div class="quick-btn" onclick="quickPrompt('pickup qui tourne et flotte')">✨ Pickup</div>
+                            <div class="quick-btn" onclick="quickPrompt('téléporteur avec effets')">🌀 Téléporteur</div>
+                            <div class="quick-btn" onclick="quickPrompt('interrupteur qui allume des lumières')">💡 Interrupteur</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="visualization-panel">
-                <div class="controls">
-                    <div class="control-panel">
-                        <h2>📥 Import JSON Manuel</h2>
-                        <textarea id="jsonInput" placeholder="Collez ici le JSON du Blueprint..."></textarea>
-                        <div style="margin-top: 10px;">
-                            <button onclick="loadBlueprint()">🔄 Charger</button>
-                            <button class="danger-btn" onclick="clearCanvas()">🗑️ Effacer</button>
-                        </div>
-                    </div>
-
-                    <div class="control-panel">
-                        <h2>📤 Export & Sauvegarde</h2>
-                        <textarea id="jsonOutput" placeholder="Le JSON exporté apparaîtra ici..." readonly></textarea>
-                        <div style="margin-top: 10px;">
-                            <button class="success-btn" onclick="exportBlueprint()">💾 Exporter</button>
-                            <button onclick="copyToClipboard()">📋 Copier</button>
-                            <button onclick="downloadJSON()">⬇️ Télécharger</button>
-                        </div>
-                    </div>
+            <!-- Blueprint Viewer -->
+            <div class="viewer-container">
+                <div class="tabs-container" id="tabsContainer">
+                    <div class="new-tab-btn" onclick="createNewTab()" title="Nouveau Blueprint">+</div>
                 </div>
 
-                <div id="canvas-container">
-                    <div class="view-controls">
-                        <button onclick="autoArrange()">🔧 Auto-Arrange</button>
-                        <button onclick="toggleConnectionLabels()">📝 Labels</button>
-                        <button onclick="toggleGrid()">⊞ Grille</button>
+                <div class="canvas-wrapper">
+                    <div class="canvas-controls">
+                        <div class="control-group">
+                            <button class="control-btn" onclick="zoomIn()" title="Zoom +">🔍</button>
+                            <button class="control-btn" onclick="zoomOut()" title="Zoom -">🔍</button>
+                            <button class="control-btn" onclick="resetView()" title="Reset">⟲</button>
+                            <button class="control-btn" onclick="fitToView()" title="Ajuster">⊡</button>
+                        </div>
+                        <div class="control-group">
+                            <button class="control-btn" onclick="autoArrange()" title="Auto-arrange">🔧</button>
+                            <button class="control-btn" id="labelsBtn" onclick="toggleLabels()" title="Labels">📝</button>
+                            <button class="control-btn active" id="gridBtn" onclick="toggleGrid()" title="Grille">⊞</button>
+                        </div>
                     </div>
-                    <div class="zoom-controls">
-                        <button onclick="zoomIn()">+</button>
-                        <button onclick="zoomOut()">-</button>
-                        <button onclick="resetView()">⟲</button>
-                        <button onclick="fitToView()">⊡</button>
-                    </div>
+
                     <canvas id="blueprintCanvas"></canvas>
-                    <div class="legend">
-                        <span class="legend-item"><span class="legend-color" style="background: #ffffff;"></span>Exec</span>
-                        <span class="legend-item"><span class="legend-color" style="background: #ff0000;"></span>Bool</span>
-                        <span class="legend-item"><span class="legend-color" style="background: #00ffff;"></span>Int</span>
-                        <span class="legend-item"><span class="legend-color" style="background: #00ff00;"></span>Float</span>
-                        <span class="legend-item"><span class="legend-color" style="background: #ff00ff;"></span>String</span>
-                        <span class="legend-item"><span class="legend-color" style="background: #0088ff;"></span>Object</span>
-                        <span class="legend-item"><span class="legend-color" style="background: #ffaa00;"></span>Vector</span>
-                        <span class="legend-item"><span class="legend-color" style="background: #ff8800;"></span>Rotator</span>
-                    </div>
+
                     <div class="info-panel">
-                        <span class="node-count">Nodes: <span id="nodeCount">0</span></span> | 
-                        <span class="connection-count">Connexions: <span id="connectionCount">0</span></span> | 
-                        Zoom: <span id="zoomLevel">100%</span>
+                        <div class="info-item">
+                            <span class="info-label">Nodes:</span>
+                            <span class="info-value" id="nodeCount">0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Connexions:</span>
+                            <span class="info-value" id="connectionCount">0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Zoom:</span>
+                            <span class="info-value" id="zoomLevel">100%</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="statusMessage"></div>
-
     <script>
-        // ⚠️ IMPORTANT: Remplace cette URL par ton URL Cloudflare Worker !
-        // Exemple: https://blueprint-api.ton-username.workers.dev/api
+        // URL de ton Cloudflare Worker
         const WORKER_API_URL = 'https://blueprint-api.squall-justice.workers.dev/api';
         
-        // Configuration et variables globales
+        // Configuration globale
+        let apiKey = '';
+        let currentTabId = null;
+        let tabs = {};
+        let showLabels = false;
+        let showGrid = true;
+
+        // Canvas configuration
         const canvas = document.getElementById('blueprintCanvas');
         const ctx = canvas.getContext('2d');
-        let blueprintData = null;
-        let zoom = 1;
-        let panX = 0;
-        let panY = 0;
-        let isDragging = false;
-        let dragStartX = 0;
-        let dragStartY = 0;
-        let showConnectionLabels = true;
-        let showGrid = true;
-        let apiKey = '';
-
-        // Configuration des nodes
         const NODE_WIDTH = 250;
         const NODE_MIN_HEIGHT = 80;
         const PIN_HEIGHT = 30;
         const PIN_RADIUS = 6;
         const HEADER_HEIGHT = 35;
 
-        // Gestion de l'API Claude
+        // Tab management
+        function generateTabId() {
+            return 'tab_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function createNewTab(name = 'Nouveau Blueprint', blueprintData = null) {
+            const tabId = generateTabId();
+            
+            tabs[tabId] = {
+                name: name,
+                blueprintData: blueprintData,
+                zoom: 1,
+                panX: 0,
+                panY: 0
+            };
+
+            renderTabs();
+            switchToTab(tabId);
+            
+            if (blueprintData) {
+                setTimeout(() => {
+                    autoArrange();
+                    fitToView();
+                }, 100);
+            }
+            
+            return tabId;
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('tabsContainer');
+            const existingTabs = container.querySelectorAll('.tab');
+            existingTabs.forEach(tab => tab.remove());
+
+            Object.keys(tabs).forEach(tabId => {
+                const tab = tabs[tabId];
+                const tabElement = document.createElement('div');
+                tabElement.className = 'tab' + (tabId === currentTabId ? ' active' : '');
+                tabElement.innerHTML = `
+                    <span class="tab-title">${tab.name}</span>
+                    <span class="tab-close" onclick="closeTab('${tabId}', event)">×</span>
+                `;
+                tabElement.onclick = (e) => {
+                    if (!e.target.classList.contains('tab-close')) {
+                        switchToTab(tabId);
+                    }
+                };
+                
+                const newTabBtn = container.querySelector('.new-tab-btn');
+                container.insertBefore(tabElement, newTabBtn);
+            });
+        }
+
+        function switchToTab(tabId) {
+            if (!tabs[tabId]) return;
+            
+            // Sauvegarder l'état du tab actuel
+            if (currentTabId && tabs[currentTabId]) {
+                const currentTab = tabs[currentTabId];
+                currentTab.zoom = getCurrentZoom();
+                currentTab.panX = getCurrentPanX();
+                currentTab.panY = getCurrentPanY();
+            }
+
+            currentTabId = tabId;
+            const tab = tabs[tabId];
+            
+            // Restaurer l'état du nouveau tab
+            setCanvasState(tab);
+            renderTabs();
+            drawBlueprint();
+        }
+
+        function closeTab(tabId, event) {
+            event.stopPropagation();
+            
+            delete tabs[tabId];
+            
+            if (tabId === currentTabId) {
+                const remainingTabs = Object.keys(tabs);
+                if (remainingTabs.length > 0) {
+                    switchToTab(remainingTabs[remainingTabs.length - 1]);
+                } else {
+                    currentTabId = null;
+                    clearCanvas();
+                }
+            }
+            
+            renderTabs();
+        }
+
+        // Canvas state management
+        let zoom = 1;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+
+        function getCurrentZoom() { return zoom; }
+        function getCurrentPanX() { return panX; }
+        function getCurrentPanY() { return panY; }
+
+        function setCanvasState(tab) {
+            zoom = tab.zoom || 1;
+            panX = tab.panX || 0;
+            panY = tab.panY || 0;
+        }
+
+        // API Management
         function saveApiKey() {
             apiKey = document.getElementById('apiKey').value;
             if (apiKey) {
                 localStorage.setItem('claude_api_key', apiKey);
-                showStatus('Clé API sauvegardée', 'success');
+                showToast('Clé API sauvegardée', 'success');
                 updateApiStatus(true);
+                document.getElementById('apiSetup').classList.add('hidden');
             } else {
-                showStatus('Veuillez entrer une clé API', 'error');
+                showToast('Veuillez entrer une clé API', 'error');
             }
         }
 
@@ -614,6 +885,7 @@ Je peux créer des Blueprints pour :
                 apiKey = savedKey;
                 document.getElementById('apiKey').value = savedKey;
                 updateApiStatus(true);
+                document.getElementById('apiSetup').classList.add('hidden');
             }
         }
 
@@ -622,243 +894,163 @@ Je peux créer des Blueprints pour :
             const text = document.getElementById('apiStatusText');
             
             if (connected) {
-                indicator.classList.add('connected');
+                indicator.classList.add('active');
                 text.textContent = 'Connecté';
             } else {
-                indicator.classList.remove('connected');
-                text.textContent = 'Non connecté';
+                indicator.classList.remove('active');
+                text.textContent = 'Déconnecté';
             }
         }
 
         async function testApiConnection() {
-    if (!apiKey) {
-        showStatus('Veuillez d\'abord configurer votre clé API', 'warning');
-        return;
-    }
+            if (!apiKey) {
+                showToast('Configurez d\'abord votre clé API', 'error');
+                return;
+            }
 
-    try {
-        const response = await fetch(WORKER_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey
-            },
-            body: JSON.stringify({
-                model: 'claude-3-sonnet-20240229',
-                max_tokens: 10,
-                messages: [{
-                    role: 'user',
-                    content: 'test'
-                }]
-            })
-        });
+            try {
+                const response = await fetch(WORKER_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-3-5-sonnet-20241022',
+                        max_tokens: 10,
+                        messages: [{
+                            role: 'user',
+                            content: 'test'
+                        }]
+                    })
+                });
 
-        const data = await response.json();
-        console.log('Réponse API:', data); // Pour debug
-        
-        if (response.ok) {
-            showStatus('Connexion API réussie!', 'success');
-            updateApiStatus(true);
-        } else {
-            // Affiche l'erreur exacte
-            const errorMsg = data.error?.message || data.error || JSON.stringify(data);
-            showStatus('Erreur API: ' + errorMsg, 'error');
-            updateApiStatus(false);
+                if (response.ok) {
+                    showToast('Connexion réussie!', 'success');
+                    updateApiStatus(true);
+                } else {
+                    showToast('Erreur de connexion', 'error');
+                    updateApiStatus(false);
+                }
+            } catch (error) {
+                showToast('Erreur: ' + error.message, 'error');
+                updateApiStatus(false);
+            }
         }
-    } catch (error) {
-        console.error('Erreur complète:', error);
-        showStatus('Erreur de connexion: ' + error.message, 'error');
-        updateApiStatus(false);
-    }
-}
 
-        // Gestion du chat
+        // Chat functionality
         function addMessage(content, isUser = false) {
             const messagesContainer = document.getElementById('chatMessages');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
             
-            const labelDiv = document.createElement('div');
-            labelDiv.className = 'message-label';
-            labelDiv.textContent = isUser ? 'Vous' : 'Claude';
+            const avatar = isUser ? '👤' : '🤖';
+            const sender = isUser ? 'Vous' : 'Assistant Blueprint';
             
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-            contentDiv.innerHTML = content;
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar">${avatar}</div>
+                    <span>${sender}</span>
+                </div>
+                <div class="message-content">${content}</div>
+            `;
             
-            messageDiv.appendChild(labelDiv);
-            messageDiv.appendChild(contentDiv);
             messagesContainer.appendChild(messageDiv);
-            
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
         async function sendMessage() {
-    const input = document.getElementById('chatInput');
-    const message = input.value.trim();
-    
-    if (!message) return;
-    
-    if (!apiKey) {
-        showStatus('Veuillez configurer votre clé API Claude', 'warning');
-        return;
-    }
-
-    addMessage(message, true);
-    input.value = '';
-    
-    const sendBtn = document.getElementById('sendBtn');
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    
-    sendBtn.disabled = true;
-    loadingIndicator.classList.add('active');
-
-    try {
-        const systemPrompt = `Tu es un assistant spécialisé dans la création de Blueprints pour Unreal Engine 5.5/5.6.
-        
-        Quand on te demande de créer un Blueprint, tu DOIS TOUJOURS répondre avec:
-        1. Une brève explication de ce que fait le Blueprint (2-3 lignes max)
-        2. Un bloc de code JSON valide entre \`\`\`json et \`\`\`
-        
-        Le JSON doit suivre EXACTEMENT cette structure:
-        {
-            "name": "Nom du Blueprint",
-            "description": "Description",
-            "version": "UE 5.5/5.6",
-            "nodes": [
-                {
-                    "id": "unique_id",
-                    "type": "Type de node UE5",
-                    "category": "Event/Action/Variable/Math/Function",
-                    "position": {"x": nombre, "y": nombre},
-                    "inputs": [
-                        {"name": "nom", "type": "exec/bool/float/int/string/vector/rotator/object", "id": "unique_id"}
-                    ],
-                    "outputs": [
-                        {"name": "nom", "type": "type", "id": "unique_id", "value": "valeur optionnelle"}
-                    ]
-                }
-            ],
-            "connections": [
-                {
-                    "from": {"nodeId": "id_node", "pinId": "id_pin"},
-                    "to": {"nodeId": "id_node", "pinId": "id_pin"}
-                }
-            ]
-        }
-        
-        IMPORTANT:
-        - Les positions des nodes doivent être espacées (minimum 300px horizontalement, 150px verticalement)
-        - Les IDs doivent être uniques et descriptifs
-        - Utilise les vrais noms de nodes UE5
-        - Le JSON doit être valide et complet
-        - Réponds toujours en français`;
-
-        console.log('Envoi de la requête à:', WORKER_API_URL);
-        
-        const response = await fetch(WORKER_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey
-            },
-            body: JSON.stringify({
-                model: 'claude-opus-4-1-20250805',  // ← Claude Opus 4.1 !
-                max_tokens: 4096,
-                system: systemPrompt,
-                messages: [{
-                    role: 'user',
-                    content: message
-                }]
-            })
-        });
-
-        console.log('Status de la réponse:', response.status);
-        
-        const data = await response.json();
-        console.log('Données reçues:', data);
-
-        if (!response.ok) {
-            // Gestion des erreurs API
-            let errorMessage = 'Erreur inconnue';
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
             
-            if (data.error) {
-                if (typeof data.error === 'string') {
-                    errorMessage = data.error;
-                } else if (data.error.message) {
-                    errorMessage = data.error.message;
-                } else if (data.error.type) {
-                    errorMessage = `${data.error.type}: ${data.error.message || ''}`;
-                } else {
-                    errorMessage = JSON.stringify(data.error);
-                }
+            if (!message) return;
+            
+            if (!apiKey) {
+                showToast('Configurez votre clé API', 'error');
+                return;
             }
-            
-            console.error('Erreur API:', errorMessage);
-            throw new Error(errorMessage);
-        }
 
-        // Vérifier que la réponse contient le contenu attendu
-        if (!data.content || !data.content[0] || !data.content[0].text) {
-            console.error('Format de réponse inattendu:', data);
-            throw new Error('Format de réponse inattendu de l\'API');
-        }
-
-        const assistantResponse = data.content[0].text;
-        console.log('Réponse de Claude:', assistantResponse);
-        
-        // Ajouter la réponse au chat
-        addMessage(assistantResponse);
-        
-        // Extraire et charger le JSON si présent
-        const jsonMatch = assistantResponse.match(/```json\n([\s\S]*?)\n```/);
-        if (jsonMatch) {
-            const jsonStr = jsonMatch[1];
-            console.log('JSON extrait:', jsonStr);
+            addMessage(message, true);
+            input.value = '';
             
+            const sendBtn = document.getElementById('sendBtn');
+            const spinner = document.getElementById('loadingSpinner');
+            
+            sendBtn.disabled = true;
+            spinner.classList.add('active');
+
             try {
-                blueprintData = JSON.parse(jsonStr);
-                document.getElementById('jsonInput').value = jsonStr;
-                autoArrange();
-                fitToView();
-                showStatus('Blueprint chargé et visualisé!', 'success');
-            } catch (e) {
-                console.error('Erreur parsing JSON:', e);
-                showStatus('Erreur dans le format JSON du Blueprint', 'error');
-            }
-        } else {
-            console.log('Pas de JSON trouvé dans la réponse');
-        }
+                const response = await fetch(WORKER_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-3-5-sonnet-20241022',
+                        max_tokens: 4096,
+                        system: `Tu es un assistant spécialisé dans la création de Blueprints pour Unreal Engine 5.5/5.6.
+                        
+                        IMPORTANT: 
+                        1. Réponds TOUJOURS avec une brève description (2-3 lignes max)
+                        2. NE PAS afficher le JSON dans ta réponse textuelle
+                        3. Mets le JSON dans un bloc avec exactement ce format: |||JSON_START|||{json ici}|||JSON_END|||
+                        
+                        Structure JSON requise:
+                        {
+                            "name": "Nom du Blueprint",
+                            "description": "Description",
+                            "version": "UE 5.5/5.6",
+                            "nodes": [...],
+                            "connections": [...]
+                        }`,
+                        messages: [{
+                            role: 'user',
+                            content: message
+                        }]
+                    })
+                });
 
-    } catch (error) {
-        console.error('Erreur complète:', error);
-        
-        // Message d'erreur plus détaillé
-        let errorDisplay = error.message;
-        
-        // Messages d'erreur personnalisés selon le type
-        if (error.message.includes('invalid_api_key')) {
-            errorDisplay = 'Clé API invalide. Vérifiez votre clé.';
-        } else if (error.message.includes('insufficient_quota') || error.message.includes('insufficient_credits')) {
-            errorDisplay = 'Pas de crédits sur votre compte Anthropic. Ajoutez des crédits.';
-        } else if (error.message.includes('model_not_found')) {
-            errorDisplay = 'Modèle Claude Opus 4.1 non trouvé. Vérifiez votre accès au modèle.';
-        } else if (error.message.includes('NetworkError')) {
-            errorDisplay = 'Erreur réseau. Vérifiez votre connexion.';
-        } else if (error.message.includes('rate_limit')) {
-            errorDisplay = 'Limite de taux atteinte. Attendez quelques secondes.';
-        } else if (error.message.includes('permission')) {
-            errorDisplay = 'Votre clé API n\'a pas accès à Claude Opus 4.1.';
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error?.message || 'Erreur API');
+                }
+
+                const responseText = data.content[0].text;
+                
+                // Extraire le JSON caché
+                const jsonMatch = responseText.match(/\|\|\|JSON_START\|\|\|([\s\S]*?)\|\|\|JSON_END\|\|\|/);
+                let displayText = responseText;
+                
+                if (jsonMatch) {
+                    // Retirer le JSON du texte affiché
+                    displayText = responseText.replace(/\|\|\|JSON_START\|\|\|[\s\S]*?\|\|\|JSON_END\|\|\|/, '').trim();
+                    
+                    try {
+                        const blueprintData = JSON.parse(jsonMatch[1]);
+                        
+                        // Créer un nouvel onglet avec le Blueprint
+                        const tabName = blueprintData.name || 'Blueprint';
+                        createNewTab(tabName, blueprintData);
+                        
+                        showToast(`Blueprint "${tabName}" créé!`, 'success');
+                    } catch (e) {
+                        console.error('Erreur parsing JSON:', e);
+                    }
+                }
+                
+                // Afficher uniquement la description
+                addMessage(displayText);
+
+            } catch (error) {
+                addMessage(`❌ Erreur: ${error.message}`, false);
+                showToast('Erreur: ' + error.message, 'error');
+            } finally {
+                sendBtn.disabled = false;
+                spinner.classList.remove('active');
+            }
         }
-        
-        addMessage(`❌ Erreur: ${errorDisplay}\n\nDétails techniques: ${error.message}`, false);
-        showStatus('Erreur: ' + errorDisplay, 'error');
-        
-    } finally {
-        sendBtn.disabled = false;
-        loadingIndicator.classList.remove('active');
-    }
-}
 
         function handleChatKeypress(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
@@ -867,38 +1059,32 @@ Je peux créer des Blueprints pour :
             }
         }
 
-        function setExample(text) {
-            document.getElementById('chatInput').value = text;
+        function quickPrompt(text) {
+            document.getElementById('chatInput').value = `Crée un Blueprint pour ${text}`;
             document.getElementById('chatInput').focus();
         }
 
-        // Initialisation du canvas
+        // Canvas rendering
         function initCanvas() {
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             setupMouseControls();
-            drawGrid();
             loadApiKey();
+            drawGrid();
         }
 
         function resizeCanvas() {
-            const container = document.getElementById('canvas-container');
-            canvas.width = container.clientWidth - 40;
-            canvas.height = 560;
-            if (blueprintData) {
-                drawBlueprint();
-            } else {
-                drawGrid();
-            }
+            const wrapper = document.querySelector('.canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            drawBlueprint();
         }
 
-        // Contrôles de souris
         function setupMouseControls() {
             canvas.addEventListener('mousedown', (e) => {
                 isDragging = true;
                 dragStartX = e.clientX - panX;
                 dragStartY = e.clientY - panY;
-                canvas.style.cursor = 'grabbing';
             });
 
             canvas.addEventListener('mousemove', (e) => {
@@ -911,45 +1097,31 @@ Je peux créer des Blueprints pour :
 
             canvas.addEventListener('mouseup', () => {
                 isDragging = false;
-                canvas.style.cursor = 'grab';
-            });
-
-            canvas.addEventListener('dblclick', () => {
-                centerView();
             });
 
             canvas.addEventListener('wheel', (e) => {
                 e.preventDefault();
-                const rect = canvas.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
-                
-                const worldX = (mouseX - panX) / zoom;
-                const worldY = (mouseY - panY) / zoom;
-                
                 const delta = e.deltaY > 0 ? 0.9 : 1.1;
-                const newZoom = Math.max(0.1, Math.min(5, zoom * delta));
-                
-                panX = mouseX - worldX * newZoom;
-                panY = mouseY - worldY * newZoom;
-                zoom = newZoom;
-                
+                zoom = Math.max(0.1, Math.min(5, zoom * delta));
                 document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
                 drawBlueprint();
             });
         }
 
-        // Dessiner la grille
         function drawGrid() {
-            ctx.fillStyle = '#1a1a2e';
+            if (!showGrid) {
+                ctx.fillStyle = '#0a0a0f';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                return;
+            }
+
+            ctx.fillStyle = '#0a0a0f';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            if (!showGrid) return;
-            
-            ctx.strokeStyle = '#252538';
+            ctx.strokeStyle = 'rgba(0, 212, 255, 0.05)';
             ctx.lineWidth = 1;
             
-            const gridSize = 20 * zoom;
+            const gridSize = 30 * zoom;
             const offsetX = panX % gridSize;
             const offsetY = panY % gridSize;
             
@@ -968,13 +1140,27 @@ Je peux créer des Blueprints pour :
             }
         }
 
-        // Fonctions de visualisation Blueprint
-        function calculateNodeHeight(node) {
-            const maxPins = Math.max(
-                (node.inputs?.length || 0),
-                (node.outputs?.length || 0)
-            );
-            return Math.max(NODE_MIN_HEIGHT, HEADER_HEIGHT + maxPins * PIN_HEIGHT + 15);
+        function drawBlueprint() {
+            drawGrid();
+            
+            if (!currentTabId || !tabs[currentTabId]) return;
+            
+            const blueprintData = tabs[currentTabId].blueprintData;
+            if (!blueprintData) return;
+
+            // Draw connections first
+            if (blueprintData.connections) {
+                blueprintData.connections.forEach(conn => drawConnection(conn, blueprintData));
+            }
+
+            // Draw nodes
+            if (blueprintData.nodes) {
+                blueprintData.nodes.forEach(node => drawNode(node));
+            }
+
+            // Update counters
+            document.getElementById('nodeCount').textContent = blueprintData.nodes?.length || 0;
+            document.getElementById('connectionCount').textContent = blueprintData.connections?.length || 0;
         }
 
         function drawNode(node) {
@@ -983,11 +1169,13 @@ Je peux créer des Blueprints pour :
             const width = NODE_WIDTH * zoom;
             const height = calculateNodeHeight(node) * zoom;
             
+            // Node shadow
             ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
             ctx.shadowBlur = 10 * zoom;
             ctx.shadowOffsetX = 3 * zoom;
             ctx.shadowOffsetY = 3 * zoom;
             
+            // Node colors by category
             const colors = {
                 'Event': { main: '#ff4444', dark: '#cc2222' },
                 'Action': { main: '#4444ff', dark: '#2222cc' },
@@ -1000,12 +1188,14 @@ Je peux créer des Blueprints pour :
             
             const color = colors[node.category] || colors.Default;
             
+            // Node background
             const gradient = ctx.createLinearGradient(x, y, x, y + height);
             gradient.addColorStop(0, color.dark + 'dd');
             gradient.addColorStop(1, color.dark + '99');
             ctx.fillStyle = gradient;
             ctx.fillRect(x, y, width, height);
             
+            // Node header
             const headerGradient = ctx.createLinearGradient(x, y, x, y + HEADER_HEIGHT * zoom);
             headerGradient.addColorStop(0, color.main);
             headerGradient.addColorStop(1, color.dark);
@@ -1013,18 +1203,23 @@ Je peux créer des Blueprints pour :
             ctx.fillRect(x, y, width, HEADER_HEIGHT * zoom);
             
             ctx.shadowColor = 'transparent';
-            ctx.shadowBlur = 0;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
             
+            // Node border
             ctx.strokeStyle = color.main;
             ctx.lineWidth = 2 * zoom;
             ctx.strokeRect(x, y, width, height);
             
+            // Node title
             ctx.fillStyle = '#ffffff';
-            ctx.font = `bold ${14 * zoom}px Arial`;
+            ctx.font = `bold ${14 * zoom}px -apple-system, BlinkMacSystemFont, sans-serif`;
             ctx.fillText(node.type, x + 10 * zoom, y + 22 * zoom);
             
+            // Draw pins
+            drawPins(node, x, y, width);
+        }
+
+        function drawPins(node, x, y, width) {
+            // Input pins
             if (node.inputs) {
                 node.inputs.forEach((input, i) => {
                     const pinY = y + (HEADER_HEIGHT + 15 + i * PIN_HEIGHT) * zoom;
@@ -1037,14 +1232,15 @@ Je peux créer des Blueprints pour :
                     ctx.lineWidth = 1 * zoom;
                     ctx.stroke();
                     
-                    ctx.fillStyle = '#000000';
-                    ctx.font = `${11 * zoom}px Arial`;
-                    ctx.fillText(input.name, x + 12 * zoom + 1, pinY + 4 * zoom + 1);
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillText(input.name, x + 12 * zoom, pinY + 4 * zoom);
+                    if (showLabels) {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = `${11 * zoom}px -apple-system, BlinkMacSystemFont, sans-serif`;
+                        ctx.fillText(input.name, x + 12 * zoom, pinY + 4 * zoom);
+                    }
                 });
             }
             
+            // Output pins
             if (node.outputs) {
                 node.outputs.forEach((output, i) => {
                     const pinY = y + (HEADER_HEIGHT + 15 + i * PIN_HEIGHT) * zoom;
@@ -1057,41 +1253,18 @@ Je peux créer des Blueprints pour :
                     ctx.lineWidth = 1 * zoom;
                     ctx.stroke();
                     
-                    ctx.fillStyle = '#000000';
-                    ctx.font = `${11 * zoom}px Arial`;
-                    ctx.textAlign = 'right';
-                    ctx.fillText(output.name, x + width - 12 * zoom + 1, pinY + 4 * zoom + 1);
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillText(output.name, x + width - 12 * zoom, pinY + 4 * zoom);
-                    ctx.textAlign = 'left';
-                    
-                    if (output.value !== undefined) {
-                        ctx.fillStyle = '#ffff00';
-                        ctx.font = `italic ${10 * zoom}px Arial`;
+                    if (showLabels) {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = `${11 * zoom}px -apple-system, BlinkMacSystemFont, sans-serif`;
                         ctx.textAlign = 'right';
-                        ctx.fillText(`(${output.value})`, x + width - 12 * zoom, pinY + 16 * zoom);
+                        ctx.fillText(output.name, x + width - 12 * zoom, pinY + 4 * zoom);
                         ctx.textAlign = 'left';
                     }
                 });
             }
         }
 
-        function getPinColor(type) {
-            const pinColors = {
-                'exec': '#ffffff',
-                'bool': '#ff0000',
-                'int': '#00ffff',
-                'float': '#00ff00',
-                'string': '#ff00ff',
-                'object': '#0088ff',
-                'vector': '#ffaa00',
-                'rotator': '#ff8800',
-                'default': '#888888'
-            };
-            return pinColors[type] || pinColors.default;
-        }
-
-        function drawConnection(connection) {
+        function drawConnection(connection, blueprintData) {
             const fromNode = blueprintData.nodes.find(n => n.id === connection.from.nodeId);
             const toNode = blueprintData.nodes.find(n => n.id === connection.to.nodeId);
             
@@ -1111,155 +1284,66 @@ Je peux créer des Blueprints pour :
             const y2 = (toNode.position.y + HEADER_HEIGHT + 15 + toIndex * PIN_HEIGHT) * zoom + panY;
             
             const color = getPinColor(fromPin.type);
-            const lineWidth = fromPin.type === 'exec' ? 3 * zoom : 2 * zoom;
-            
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-            ctx.shadowBlur = 3 * zoom;
-            
             ctx.strokeStyle = color;
-            ctx.lineWidth = lineWidth;
+            ctx.lineWidth = (fromPin.type === 'exec' ? 3 : 2) * zoom;
+            
             ctx.beginPath();
             ctx.moveTo(x1, y1);
-            
-            const distance = Math.abs(x2 - x1);
-            const cp1x = x1 + Math.min(distance * 0.5, 100 * zoom);
-            const cp2x = x2 - Math.min(distance * 0.5, 100 * zoom);
-            
+            const cp1x = x1 + Math.abs(x2 - x1) * 0.5;
+            const cp2x = x2 - Math.abs(x2 - x1) * 0.5;
             ctx.bezierCurveTo(cp1x, y1, cp2x, y2, x2, y2);
             ctx.stroke();
-            
-            ctx.shadowColor = 'transparent';
-            ctx.shadowBlur = 0;
-            
-            if (fromPin.type === 'exec') {
-                const t = 0.5;
-                const mx = Math.pow(1-t, 3) * x1 + 3 * Math.pow(1-t, 2) * t * cp1x + 3 * (1-t) * Math.pow(t, 2) * cp2x + Math.pow(t, 3) * x2;
-                const my = Math.pow(1-t, 3) * y1 + 3 * Math.pow(1-t, 2) * t * y1 + 3 * (1-t) * Math.pow(t, 2) * y2 + Math.pow(t, 3) * y2;
-                
-                const t2 = 0.51;
-                const mx2 = Math.pow(1-t2, 3) * x1 + 3 * Math.pow(1-t2, 2) * t2 * cp1x + 3 * (1-t2) * Math.pow(t2, 2) * cp2x + Math.pow(t2, 3) * x2;
-                const my2 = Math.pow(1-t2, 3) * y1 + 3 * Math.pow(1-t2, 2) * t2 * y1 + 3 * (1-t2) * Math.pow(t2, 2) * y2 + Math.pow(t2, 3) * y2;
-                const angle = Math.atan2(my2 - my, mx2 - mx);
-                
-                ctx.save();
-                ctx.translate(mx, my);
-                ctx.rotate(angle);
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(-8 * zoom, -4 * zoom);
-                ctx.lineTo(-8 * zoom, 4 * zoom);
-                ctx.closePath();
-                ctx.fill();
-                ctx.restore();
-            }
-            
-            if (showConnectionLabels && fromPin.name) {
-                const mx = (x1 + x2) / 2;
-                const my = (y1 + y2) / 2;
-                
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                const textWidth = ctx.measureText(fromPin.name).width;
-                ctx.fillRect(mx - textWidth/2 - 3, my - 8 * zoom, textWidth + 6, 16 * zoom);
-                
-                ctx.fillStyle = color;
-                ctx.font = `${10 * zoom}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.fillText(fromPin.name, mx, my + 2 * zoom);
-                ctx.textAlign = 'left';
-            }
         }
 
-        function autoArrange() {
-            if (!blueprintData || !blueprintData.nodes) return;
-            
-            const nodes = blueprintData.nodes;
-            const visited = new Set();
-            const layers = [];
-            
-            const startNodes = nodes.filter(n => 
-                !n.inputs || n.inputs.length === 0 || n.category === 'Event'
+        function getPinColor(type) {
+            const colors = {
+                'exec': '#ffffff',
+                'bool': '#ff0000',
+                'int': '#00ffff',
+                'float': '#00ff00',
+                'string': '#ff00ff',
+                'object': '#0088ff',
+                'vector': '#ffaa00',
+                'rotator': '#ff8800',
+                'default': '#888888'
+            };
+            return colors[type] || colors.default;
+        }
+
+        function calculateNodeHeight(node) {
+            const maxPins = Math.max(
+                (node.inputs?.length || 0),
+                (node.outputs?.length || 0)
             );
-            
-            let currentLayer = startNodes;
-            let layerIndex = 0;
-            
-            while (currentLayer.length > 0 && layerIndex < 10) {
-                layers[layerIndex] = currentLayer;
-                currentLayer.forEach(n => visited.add(n.id));
-                
-                const nextLayer = [];
-                currentLayer.forEach(node => {
-                    if (blueprintData.connections) {
-                        blueprintData.connections.forEach(conn => {
-                            if (conn.from.nodeId === node.id) {
-                                const targetNode = nodes.find(n => n.id === conn.to.nodeId);
-                                if (targetNode && !visited.has(targetNode.id)) {
-                                    if (!nextLayer.find(n => n.id === targetNode.id)) {
-                                        nextLayer.push(targetNode);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                });
-                
-                currentLayer = nextLayer;
-                layerIndex++;
-            }
-            
-            nodes.forEach(node => {
-                if (!visited.has(node.id)) {
-                    if (!layers[layerIndex]) layers[layerIndex] = [];
-                    layers[layerIndex].push(node);
-                }
-            });
-            
-            const HORIZONTAL_SPACING = 350;
-            const VERTICAL_SPACING = 150;
-            
-            layers.forEach((layer, layerIdx) => {
-                const layerHeight = layer.reduce((sum, node) => {
-                    return sum + calculateNodeHeight(node) + VERTICAL_SPACING;
-                }, 0);
-                
-                let currentY = (600 - layerHeight) / 2;
-                
-                layer.forEach(node => {
-                    node.position.x = 100 + layerIdx * HORIZONTAL_SPACING;
-                    node.position.y = currentY;
-                    currentY += calculateNodeHeight(node) + VERTICAL_SPACING;
-                });
-            });
-            
-            drawBlueprint();
-            showStatus('Nodes réorganisés', 'success');
+            return Math.max(NODE_MIN_HEIGHT, HEADER_HEIGHT + maxPins * PIN_HEIGHT + 15);
         }
 
-        function centerView() {
-            if (!blueprintData || !blueprintData.nodes || blueprintData.nodes.length === 0) return;
-            
-            let minX = Infinity, minY = Infinity;
-            let maxX = -Infinity, maxY = -Infinity;
-            
-            blueprintData.nodes.forEach(node => {
-                minX = Math.min(minX, node.position.x);
-                minY = Math.min(minY, node.position.y);
-                maxX = Math.max(maxX, node.position.x + NODE_WIDTH);
-                maxY = Math.max(maxY, node.position.y + calculateNodeHeight(node));
-            });
-            
-            const centerX = (minX + maxX) / 2;
-            const centerY = (minY + maxY) / 2;
-            
-            panX = canvas.width / 2 - centerX * zoom;
-            panY = canvas.height / 2 - centerY * zoom;
-            
+        // View controls
+        function zoomIn() {
+            zoom = Math.min(zoom * 1.2, 5);
+            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+            drawBlueprint();
+        }
+
+        function zoomOut() {
+            zoom = Math.max(zoom * 0.8, 0.1);
+            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+            drawBlueprint();
+        }
+
+        function resetView() {
+            zoom = 1;
+            panX = 0;
+            panY = 0;
+            document.getElementById('zoomLevel').textContent = '100%';
             drawBlueprint();
         }
 
         function fitToView() {
-            if (!blueprintData || !blueprintData.nodes || blueprintData.nodes.length === 0) return;
+            if (!currentTabId || !tabs[currentTabId]?.blueprintData) return;
+            
+            const blueprintData = tabs[currentTabId].blueprintData;
+            if (!blueprintData.nodes || blueprintData.nodes.length === 0) return;
             
             let minX = Infinity, minY = Infinity;
             let maxX = -Infinity, maxY = -Infinity;
@@ -1288,174 +1372,131 @@ Je peux créer des Blueprints pour :
             drawBlueprint();
         }
 
-        function toggleConnectionLabels() {
-            showConnectionLabels = !showConnectionLabels;
+        function autoArrange() {
+            if (!currentTabId || !tabs[currentTabId]?.blueprintData) return;
+            
+            const blueprintData = tabs[currentTabId].blueprintData;
+            if (!blueprintData.nodes) return;
+            
+            const nodes = blueprintData.nodes;
+            const layers = [];
+            const visited = new Set();
+            
+            // Find starting nodes
+            const startNodes = nodes.filter(n => 
+                !n.inputs || n.inputs.length === 0 || n.category === 'Event'
+            );
+            
+            // Build layers
+            let currentLayer = startNodes;
+            let layerIndex = 0;
+            
+            while (currentLayer.length > 0 && layerIndex < 10) {
+                layers[layerIndex] = currentLayer;
+                currentLayer.forEach(n => visited.add(n.id));
+                
+                const nextLayer = [];
+                currentLayer.forEach(node => {
+                    if (blueprintData.connections) {
+                        blueprintData.connections.forEach(conn => {
+                            if (conn.from.nodeId === node.id) {
+                                const targetNode = nodes.find(n => n.id === conn.to.nodeId);
+                                if (targetNode && !visited.has(targetNode.id)) {
+                                    if (!nextLayer.find(n => n.id === targetNode.id)) {
+                                        nextLayer.push(targetNode);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                currentLayer = nextLayer;
+                layerIndex++;
+            }
+            
+            // Position nodes
+            const HORIZONTAL_SPACING = 350;
+            const VERTICAL_SPACING = 150;
+            
+            layers.forEach((layer, layerIdx) => {
+                let currentY = 100;
+                layer.forEach(node => {
+                    node.position.x = 100 + layerIdx * HORIZONTAL_SPACING;
+                    node.position.y = currentY;
+                    currentY += calculateNodeHeight(node) + VERTICAL_SPACING;
+                });
+            });
+            
             drawBlueprint();
-            showStatus(`Labels ${showConnectionLabels ? 'activés' : 'désactivés'}`, 'success');
+        }
+
+        function toggleLabels() {
+            showLabels = !showLabels;
+            document.getElementById('labelsBtn').classList.toggle('active');
+            drawBlueprint();
         }
 
         function toggleGrid() {
             showGrid = !showGrid;
+            document.getElementById('gridBtn').classList.toggle('active');
             drawBlueprint();
-            showStatus(`Grille ${showGrid ? 'activée' : 'désactivée'}`, 'success');
         }
 
-        function drawBlueprint() {
-            drawGrid();
-            
-            if (!blueprintData) return;
-            
-            if (blueprintData.name) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                ctx.fillRect(10, 10, 300, 30);
-                ctx.fillStyle = '#00d4ff';
-                ctx.font = 'bold 16px Arial';
-                ctx.fillText(blueprintData.name, 20, 30);
-            }
-            
-            if (blueprintData.connections) {
-                blueprintData.connections.forEach(connection => {
-                    drawConnection(connection);
-                });
-            }
-            
-            if (blueprintData.nodes) {
-                blueprintData.nodes.forEach(node => {
-                    drawNode(node);
-                });
-            }
-            
-            document.getElementById('nodeCount').textContent = blueprintData.nodes?.length || 0;
-            document.getElementById('connectionCount').textContent = blueprintData.connections?.length || 0;
+        function clearCanvas() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            document.getElementById('nodeCount').textContent = '0';
+            document.getElementById('connectionCount').textContent = '0';
         }
 
-        function loadBlueprint() {
-            const jsonInput = document.getElementById('jsonInput').value;
-            
-            if (!jsonInput.trim()) {
-                showStatus('Veuillez coller un JSON valide', 'error');
+        // Export functionality
+        function exportCurrentBlueprint() {
+            if (!currentTabId || !tabs[currentTabId]?.blueprintData) {
+                showToast('Aucun Blueprint à exporter', 'error');
                 return;
             }
             
-            try {
-                blueprintData = JSON.parse(jsonInput);
-                
-                let needsArrange = false;
-                if (blueprintData.nodes && blueprintData.nodes.length > 1) {
-                    for (let i = 0; i < blueprintData.nodes.length - 1; i++) {
-                        for (let j = i + 1; j < blueprintData.nodes.length; j++) {
-                            const node1 = blueprintData.nodes[i];
-                            const node2 = blueprintData.nodes[j];
-                            const dx = Math.abs(node1.position.x - node2.position.x);
-                            const dy = Math.abs(node1.position.y - node2.position.y);
-                            if (dx < 50 && dy < 50) {
-                                needsArrange = true;
-                                break;
-                            }
-                        }
-                        if (needsArrange) break;
-                    }
-                }
-                
-                if (needsArrange) {
-                    autoArrange();
-                } else {
-                    drawBlueprint();
-                }
-                
-                fitToView();
-                showStatus('Blueprint chargé!', 'success');
-            } catch (e) {
-                showStatus('Erreur JSON: ' + e.message, 'error');
-                console.error(e);
-            }
-        }
-
-        function exportBlueprint() {
-            if (!blueprintData) {
-                showStatus('Aucun blueprint à exporter', 'error');
-                return;
-            }
-            
-            const jsonOutput = JSON.stringify(blueprintData, null, 2);
-            document.getElementById('jsonOutput').value = jsonOutput;
-            showStatus('Blueprint exporté!', 'success');
-        }
-
-        function copyToClipboard() {
-            const jsonOutput = document.getElementById('jsonOutput');
-            if (!jsonOutput.value) {
-                showStatus('Rien à copier', 'error');
-                return;
-            }
-            
-            jsonOutput.select();
-            document.execCommand('copy');
-            showStatus('Copié!', 'success');
-        }
-
-        function downloadJSON() {
-            if (!blueprintData) {
-                showStatus('Aucun blueprint', 'error');
-                return;
-            }
-            
+            const blueprintData = tabs[currentTabId].blueprintData;
             const json = JSON.stringify(blueprintData, null, 2);
             const blob = new Blob([json], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `blueprint_${blueprintData.name?.replace(/\s+/g, '_') || Date.now()}.json`;
+            a.download = `${blueprintData.name || 'blueprint'}.json`;
             a.click();
             URL.revokeObjectURL(url);
-            showStatus('Téléchargement démarré!', 'success');
+            
+            showToast('Blueprint exporté!', 'success');
         }
 
-        function clearCanvas() {
-            blueprintData = null;
-            document.getElementById('jsonInput').value = '';
-            document.getElementById('jsonOutput').value = '';
-            drawGrid();
-            document.getElementById('nodeCount').textContent = '0';
-            document.getElementById('connectionCount').textContent = '0';
-            showStatus('Canvas effacé', 'success');
-        }
-
-        function zoomIn() {
-            zoom = Math.min(zoom * 1.2, 5);
-            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
-            drawBlueprint();
-        }
-
-        function zoomOut() {
-            zoom = Math.max(zoom * 0.8, 0.1);
-            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
-            drawBlueprint();
-        }
-
-        function resetView() {
-            zoom = 1;
-            panX = 0;
-            panY = 0;
-            document.getElementById('zoomLevel').textContent = '100%';
-            drawBlueprint();
-        }
-
-        function showStatus(message, type) {
-            const statusDiv = document.getElementById('statusMessage');
-            statusDiv.textContent = message;
-            statusDiv.className = type;
-            statusDiv.style.display = 'block';
+        // Toast notifications
+        function showToast(message, type = 'success') {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-icon">${type === 'success' ? '✓' : '!'}</div>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
             
             setTimeout(() => {
-                statusDiv.style.display = 'none';
+                toast.remove();
             }, 3000);
         }
 
-        // Initialisation
+        function showHelp() {
+            showToast('Documentation bientôt disponible', 'success');
+        }
+
+        // Initialize
         initCanvas();
     </script>
 </body>
-
 </html>
-
