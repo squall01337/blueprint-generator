@@ -631,41 +631,46 @@ Je peux créer des Blueprints pour :
         }
 
         async function testApiConnection() {
-            if (!apiKey) {
-                showStatus('Veuillez d\'abord configurer votre clé API', 'warning');
-                return;
-            }
+    if (!apiKey) {
+        showStatus('Veuillez d\'abord configurer votre clé API', 'warning');
+        return;
+    }
 
-            try {
-                const response = await fetch(WORKER_API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': apiKey
-                    },
-                    body: JSON.stringify({
-                        model: 'claude-3-sonnet-20240229',
-                        max_tokens: 10,
-                        messages: [{
-                            role: 'user',
-                            content: 'test'
-                        }]
-                    })
-                });
+    try {
+        const response = await fetch(WORKER_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey
+            },
+            body: JSON.stringify({
+                model: 'claude-3-sonnet-20240229',
+                max_tokens: 10,
+                messages: [{
+                    role: 'user',
+                    content: 'test'
+                }]
+            })
+        });
 
-                if (response.ok) {
-                    showStatus('Connexion API réussie!', 'success');
-                    updateApiStatus(true);
-                } else {
-                    const error = await response.json();
-                    showStatus('Erreur de connexion: ' + (error.error || 'Vérifiez votre clé API'), 'error');
-                    updateApiStatus(false);
-                }
-            } catch (error) {
-                showStatus('Erreur de connexion: ' + error.message, 'error');
-                updateApiStatus(false);
-            }
+        const data = await response.json();
+        console.log('Réponse API:', data); // Pour debug
+        
+        if (response.ok) {
+            showStatus('Connexion API réussie!', 'success');
+            updateApiStatus(true);
+        } else {
+            // Affiche l'erreur exacte
+            const errorMsg = data.error?.message || data.error || JSON.stringify(data);
+            showStatus('Erreur API: ' + errorMsg, 'error');
+            updateApiStatus(false);
         }
+    } catch (error) {
+        console.error('Erreur complète:', error);
+        showStatus('Erreur de connexion: ' + error.message, 'error');
+        updateApiStatus(false);
+    }
+}
 
         // Gestion du chat
         function addMessage(content, isUser = false) {
@@ -689,118 +694,171 @@ Je peux créer des Blueprints pour :
         }
 
         async function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-            
-            if (!message) return;
-            
-            if (!apiKey) {
-                showStatus('Veuillez configurer votre clé API Claude', 'warning');
-                return;
-            }
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    if (!apiKey) {
+        showStatus('Veuillez configurer votre clé API Claude', 'warning');
+        return;
+    }
 
-            addMessage(message, true);
-            input.value = '';
-            
-            const sendBtn = document.getElementById('sendBtn');
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            
-            sendBtn.disabled = true;
-            loadingIndicator.classList.add('active');
+    addMessage(message, true);
+    input.value = '';
+    
+    const sendBtn = document.getElementById('sendBtn');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    
+    sendBtn.disabled = true;
+    loadingIndicator.classList.add('active');
 
-            try {
-                const systemPrompt = `Tu es un assistant spécialisé dans la création de Blueprints pour Unreal Engine 5.5/5.6.
-                
-                Quand on te demande de créer un Blueprint, tu DOIS TOUJOURS répondre avec:
-                1. Une brève explication de ce que fait le Blueprint (2-3 lignes max)
-                2. Un bloc de code JSON valide entre \`\`\`json et \`\`\`
-                
-                Le JSON doit suivre EXACTEMENT cette structure:
+    try {
+        const systemPrompt = `Tu es un assistant spécialisé dans la création de Blueprints pour Unreal Engine 5.5/5.6.
+        
+        Quand on te demande de créer un Blueprint, tu DOIS TOUJOURS répondre avec:
+        1. Une brève explication de ce que fait le Blueprint (2-3 lignes max)
+        2. Un bloc de code JSON valide entre \`\`\`json et \`\`\`
+        
+        Le JSON doit suivre EXACTEMENT cette structure:
+        {
+            "name": "Nom du Blueprint",
+            "description": "Description",
+            "version": "UE 5.5/5.6",
+            "nodes": [
                 {
-                    "name": "Nom du Blueprint",
-                    "description": "Description",
-                    "version": "UE 5.5/5.6",
-                    "nodes": [
-                        {
-                            "id": "unique_id",
-                            "type": "Type de node UE5",
-                            "category": "Event/Action/Variable/Math/Function",
-                            "position": {"x": nombre, "y": nombre},
-                            "inputs": [
-                                {"name": "nom", "type": "exec/bool/float/int/string/vector/rotator/object", "id": "unique_id"}
-                            ],
-                            "outputs": [
-                                {"name": "nom", "type": "type", "id": "unique_id", "value": "valeur optionnelle"}
-                            ]
-                        }
+                    "id": "unique_id",
+                    "type": "Type de node UE5",
+                    "category": "Event/Action/Variable/Math/Function",
+                    "position": {"x": nombre, "y": nombre},
+                    "inputs": [
+                        {"name": "nom", "type": "exec/bool/float/int/string/vector/rotator/object", "id": "unique_id"}
                     ],
-                    "connections": [
-                        {
-                            "from": {"nodeId": "id_node", "pinId": "id_pin"},
-                            "to": {"nodeId": "id_node", "pinId": "id_pin"}
-                        }
+                    "outputs": [
+                        {"name": "nom", "type": "type", "id": "unique_id", "value": "valeur optionnelle"}
                     ]
                 }
-                
-                IMPORTANT:
-                - Les positions des nodes doivent être espacées (minimum 300px horizontalement, 150px verticalement)
-                - Les IDs doivent être uniques et descriptifs
-                - Utilise les vrais noms de nodes UE5
-                - Le JSON doit être valide et complet
-                - Réponds toujours en français`;
-
-                const response = await fetch(WORKER_API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': apiKey
-                    },
-                    body: JSON.stringify({
-                        model: 'claude-3-sonnet-20240229',
-                        max_tokens: 4096,
-                        system: systemPrompt,
-                        messages: [{
-                            role: 'user',
-                            content: message
-                        }]
-                    })
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || `Erreur API: ${response.status}`);
+            ],
+            "connections": [
+                {
+                    "from": {"nodeId": "id_node", "pinId": "id_pin"},
+                    "to": {"nodeId": "id_node", "pinId": "id_pin"}
                 }
-
-                const data = await response.json();
-                const assistantResponse = data.content[0].text;
-                
-                // Ajouter la réponse au chat
-                addMessage(assistantResponse);
-                
-                // Extraire et charger le JSON si présent
-                const jsonMatch = assistantResponse.match(/```json\n([\s\S]*?)\n```/);
-                if (jsonMatch) {
-                    const jsonStr = jsonMatch[1];
-                    try {
-                        blueprintData = JSON.parse(jsonStr);
-                        document.getElementById('jsonInput').value = jsonStr;
-                        autoArrange();
-                        fitToView();
-                        showStatus('Blueprint chargé et visualisé!', 'success');
-                    } catch (e) {
-                        console.error('Erreur parsing JSON:', e);
-                        showStatus('Erreur dans le format JSON', 'error');
-                    }
-                }
-
-            } catch (error) {
-                addMessage(`❌ Erreur: ${error.message}`, false);
-                showStatus('Erreur: ' + error.message, 'error');
-            } finally {
-                sendBtn.disabled = false;
-                loadingIndicator.classList.remove('active');
-            }
+            ]
         }
+        
+        IMPORTANT:
+        - Les positions des nodes doivent être espacées (minimum 300px horizontalement, 150px verticalement)
+        - Les IDs doivent être uniques et descriptifs
+        - Utilise les vrais noms de nodes UE5
+        - Le JSON doit être valide et complet
+        - Réponds toujours en français`;
+
+        console.log('Envoi de la requête à:', WORKER_API_URL);
+        
+        const response = await fetch(WORKER_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey
+            },
+            body: JSON.stringify({
+                model: 'claude-opus-4-1-20250805',  // ← Claude Opus 4.1 !
+                max_tokens: 4096,
+                system: systemPrompt,
+                messages: [{
+                    role: 'user',
+                    content: message
+                }]
+            })
+        });
+
+        console.log('Status de la réponse:', response.status);
+        
+        const data = await response.json();
+        console.log('Données reçues:', data);
+
+        if (!response.ok) {
+            // Gestion des erreurs API
+            let errorMessage = 'Erreur inconnue';
+            
+            if (data.error) {
+                if (typeof data.error === 'string') {
+                    errorMessage = data.error;
+                } else if (data.error.message) {
+                    errorMessage = data.error.message;
+                } else if (data.error.type) {
+                    errorMessage = `${data.error.type}: ${data.error.message || ''}`;
+                } else {
+                    errorMessage = JSON.stringify(data.error);
+                }
+            }
+            
+            console.error('Erreur API:', errorMessage);
+            throw new Error(errorMessage);
+        }
+
+        // Vérifier que la réponse contient le contenu attendu
+        if (!data.content || !data.content[0] || !data.content[0].text) {
+            console.error('Format de réponse inattendu:', data);
+            throw new Error('Format de réponse inattendu de l\'API');
+        }
+
+        const assistantResponse = data.content[0].text;
+        console.log('Réponse de Claude:', assistantResponse);
+        
+        // Ajouter la réponse au chat
+        addMessage(assistantResponse);
+        
+        // Extraire et charger le JSON si présent
+        const jsonMatch = assistantResponse.match(/```json\n([\s\S]*?)\n```/);
+        if (jsonMatch) {
+            const jsonStr = jsonMatch[1];
+            console.log('JSON extrait:', jsonStr);
+            
+            try {
+                blueprintData = JSON.parse(jsonStr);
+                document.getElementById('jsonInput').value = jsonStr;
+                autoArrange();
+                fitToView();
+                showStatus('Blueprint chargé et visualisé!', 'success');
+            } catch (e) {
+                console.error('Erreur parsing JSON:', e);
+                showStatus('Erreur dans le format JSON du Blueprint', 'error');
+            }
+        } else {
+            console.log('Pas de JSON trouvé dans la réponse');
+        }
+
+    } catch (error) {
+        console.error('Erreur complète:', error);
+        
+        // Message d'erreur plus détaillé
+        let errorDisplay = error.message;
+        
+        // Messages d'erreur personnalisés selon le type
+        if (error.message.includes('invalid_api_key')) {
+            errorDisplay = 'Clé API invalide. Vérifiez votre clé.';
+        } else if (error.message.includes('insufficient_quota') || error.message.includes('insufficient_credits')) {
+            errorDisplay = 'Pas de crédits sur votre compte Anthropic. Ajoutez des crédits.';
+        } else if (error.message.includes('model_not_found')) {
+            errorDisplay = 'Modèle Claude Opus 4.1 non trouvé. Vérifiez votre accès au modèle.';
+        } else if (error.message.includes('NetworkError')) {
+            errorDisplay = 'Erreur réseau. Vérifiez votre connexion.';
+        } else if (error.message.includes('rate_limit')) {
+            errorDisplay = 'Limite de taux atteinte. Attendez quelques secondes.';
+        } else if (error.message.includes('permission')) {
+            errorDisplay = 'Votre clé API n\'a pas accès à Claude Opus 4.1.';
+        }
+        
+        addMessage(`❌ Erreur: ${errorDisplay}\n\nDétails techniques: ${error.message}`, false);
+        showStatus('Erreur: ' + errorDisplay, 'error');
+        
+    } finally {
+        sendBtn.disabled = false;
+        loadingIndicator.classList.remove('active');
+    }
+}
 
         function handleChatKeypress(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
@@ -1400,3 +1458,4 @@ Je peux créer des Blueprints pour :
 </body>
 
 </html>
+
