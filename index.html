@@ -630,6 +630,9 @@
                     <div class="status-dot" id="apiStatus"></div>
                     <span id="apiStatusText">Déconnecté</span>
                 </div>
+                <button class="btn btn-secondary btn-icon" onclick="clearConversation()" title="Nouvelle conversation">
+                    🔄
+                </button>
                 <button class="btn btn-secondary btn-icon" onclick="exportCurrentBlueprint()" title="Exporter">
                     📥
                 </button>
@@ -690,6 +693,7 @@ Configurez d'abord votre clé API Claude, puis demandez-moi n'importe quel Bluep
                             <div class="quick-btn" onclick="quickPrompt('pickup qui tourne et flotte')">✨ Pickup</div>
                             <div class="quick-btn" onclick="quickPrompt('téléporteur avec effets')">🌀 Téléporteur</div>
                             <div class="quick-btn" onclick="quickPrompt('interrupteur qui allume des lumières')">💡 Interrupteur</div>
+                            <div class="quick-btn" onclick="quickPrompt('modifie le Blueprint actuel pour ajouter un son')" style="background: rgba(255, 170, 0, 0.1); border-color: rgba(255, 170, 0, 0.3); color: #ffaa00;">🔧 Modifier</div>
                         </div>
                     </div>
                 </div>
@@ -711,7 +715,7 @@ Configurez d'abord votre clé API Claude, puis demandez-moi n'importe quel Bluep
                         </div>
                         <div class="control-group">
                             <button class="control-btn" onclick="autoArrange()" title="Auto-arrange">🔧</button>
-                            <button class="control-btn" id="labelsBtn" onclick="toggleLabels()" title="Labels">📝</button>
+                            <button class="control-btn active" id="labelsBtn" onclick="toggleLabels()" title="Labels">📝</button>
                             <button class="control-btn active" id="gridBtn" onclick="toggleGrid()" title="Grille">⊞</button>
                         </div>
                     </div>
